@@ -41,7 +41,7 @@ internal extension Real where Self: FixedWidthFloatingPoint {
       let odd = even | 1
       let context = """
         x = \(x), n = \(n)
-        \(TestRandomNumberGenerator.replayInstructions(filter: "IntegerExponentTests"))
+        \(g.replayInstructions(filter: String(reflecting: IntegerExponentTests.self)))
         """
       assertClose( .infinity, Self.pow(x, even), context: context)
       assertClose( .infinity, Self.pow(x, odd), context: context)

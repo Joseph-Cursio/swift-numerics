@@ -15,9 +15,26 @@ import XCTest
 import _TestSupport
 
 final class IntegerUtilitiesShiftTests: XCTestCase {
-  
+
+  /// How a shift relates to rounding.
+  enum ShiftKind: CaseIterable {
+    /// `count <= 0`: a left shift (or none), which is always exact.
+    case nonPositiveCount
+    /// `count > 0` and no bits are lost.
+    case exact
+    /// `count > 0` and bits are lost, so the rounding rule applies.
+    case inexact
+  }
+
+  /// The bit pattern of `x`, with leading zeros, for failure messages.
+  func binary<T: FixedWidthInteger>(_ x: T) -> String {
+    let digits = String(T.Magnitude(truncatingIfNeeded: x), radix: 2)
+    return String(repeating: "0", count: T.bitWidth - digits.count) + digits
+  }
+
   func testRoundingShift<T, C>(
-    _ value: T, _ count: C, rounding rule: RoundingRule, checks: CheckCounter
+    _ value: T, _ count: C, rounding rule: RoundingRule,
+    checks: CheckCounter<ShiftKind>, replay: String
   ) where T: FixedWidthInteger, C: BinaryInteger {
     let floor = value >> count
     let lost = value &- floor << count
@@ -81,38 +98,66 @@ final class IntegerUtilitiesShiftTests: XCTestCase {
         preconditionFailure()
       }
     }
-    checks.record(exact ? "exact" : "inexact")
     let observed = value.shifted(rightBy: count, rounding: rule)
-    if observed != expected {
-      XCTFail("""
-        \(T.self)(\(value)).shifted(rightBy: \(count), rounding: .\(rule)): \
-        expected \(expected), observed \(observed)
-        \(TestRandomNumberGenerator.replayInstructions(filter: "IntegerUtilitiesShiftTests"))
-        """)
-    }
+    let kind: ShiftKind = count <= 0 ? .nonPositiveCount : exact ? .exact : .inexact
+    checks.expectEqual(observed, expected, kind, """
+      \(T.self)(\(value)).shifted(rightBy: \(count), rounding: .\(rule)): \
+      expected \(expected), observed \(observed)
+         value: \(binary(value))
+      expected: \(binary(expected))
+      observed: \(binary(observed))
+      \(replay)
+      """)
   }
     
     func testRoundingShift<T: FixedWidthInteger>(
       _ type: T.Type, rounding rule: RoundingRule
     ) {
       var rng = TestRandomNumberGenerator(label: "testRoundingShift \(T.self) \(rule)")
-      let checks = CheckCounter()
+      let replay = rng.replayInstructions(filter: String(reflecting: Self.self))
+      let checks = CheckCounter<ShiftKind>()
       for count in -2*T.bitWidth ... 2*T.bitWidth {
         // zero shifted by anything is always zero
         XCTAssertEqual(0, (0 as T).shifted(rightBy: count, rounding: rule))
         for _ in 0 ..< 100 {
           testRoundingShift(
             T.random(in: .min ... .max, using: &rng), count, rounding: rule,
-            checks: checks)
+            checks: checks, replay: replay)
         }
       }
-      
+
       for count in Int8.min ... .max {
         testRoundingShift(
           T.random(in: .min ... .max, using: &rng), count, rounding: rule,
-          checks: checks)
+          checks: checks, replay: replay)
       }
-      checks.require(["exact", "inexact"], "\(T.self) \(rule)")
+      checks.require("\(T.self) \(rule)")
+    }
+
+    /// `.requireExact` traps on inexact shifts, so it gets only exact inputs.
+    func testRequireExactShift<T: FixedWidthInteger>(_ type: T.Type) {
+      var rng = TestRandomNumberGenerator(label: "testRequireExactShift \(T.self)")
+      let replay = rng.replayInstructions(filter: String(reflecting: Self.self))
+      let checks = CheckCounter<ShiftKind>()
+      for count in -2*T.bitWidth ... 2*T.bitWidth {
+        for _ in 0 ..< 100 {
+          var value = T.random(in: .min ... .max, using: &rng)
+          // Clear the bits that the shift would lose.
+          if count > 0 { value = (value >> count) << count }
+          testRoundingShift(
+            value, count, rounding: .requireExact,
+            checks: checks, replay: replay)
+        }
+      }
+      checks.require(
+        "\(T.self) requireExact", categories: [.nonPositiveCount, .exact])
+    }
+
+    func testRequireExactShifts() {
+      testRequireExactShift(Int8.self)
+      testRequireExactShift(UInt8.self)
+      testRequireExactShift(Int.self)
+      testRequireExactShift(UInt.self)
     }
     
     func testRoundingShifts() {

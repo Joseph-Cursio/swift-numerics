@@ -11,23 +11,38 @@
 
 import XCTest
 
-/// Counts how often each category of check actually ran, so that a test can
+/// Makes checks and counts how many of each category ran, so that a test can
 /// fail when a category it means to cover never runs (compare QuickCheck's
 /// `cover`).
-final class CheckCounter {
-  private(set) var counts: [String: Int] = [:]
+///
+/// A check is counted when `expectEqual` makes it, so a check that is skipped
+/// is not counted.
+final class CheckCounter<Category: Hashable & CaseIterable> {
+  private var counts: [Category: Int] = [:]
 
-  func record(_ category: String) {
+  /// Checks that `observed == expected`, counting the check under `category`.
+  func expectEqual<T: Equatable>(
+    _ observed: T, _ expected: T, _ category: Category,
+    _ message: @autoclosure () -> String,
+    file: StaticString = #filePath, line: UInt = #line
+  ) {
     counts[category, default: 0] += 1
+    if observed != expected {
+      XCTFail(message(), file: file, line: line)
+    }
   }
 
+  /// Fails unless each of `categories` (by default, every category) has been
+  /// checked at least `minimum` times.
   func require(
-    _ categories: [String], atLeast minimum: Int = 1, _ context: String,
+    _ context: @autoclosure () -> String,
+    categories: [Category] = Array(Category.allCases),
+    atLeast minimum: Int = 1,
     file: StaticString = #filePath, line: UInt = #line
   ) {
     for category in categories where counts[category, default: 0] < minimum {
       XCTFail("""
-        \(context): "\(category)" checks ran \(counts[category, default: 0]) \
+        \(context()): \(category) checks ran \(counts[category, default: 0]) \
         times, expected at least \(minimum) (counts: \(counts))
         """, file: file, line: line)
     }
