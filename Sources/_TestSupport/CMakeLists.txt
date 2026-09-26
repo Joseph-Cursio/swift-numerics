@@ -12,7 +12,8 @@ add_library(_TestSupport
   DoubleWidth.swift
   Error.swift
   Interval.swift
-  RealTestSupport.swift)
+  RealTestSupport.swift
+  TestRandomNumberGenerator.swift)
 set_target_properties(_TestSupport PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_link_libraries(_TestSupport PUBLIC
