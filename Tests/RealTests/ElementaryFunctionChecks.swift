@@ -19,24 +19,19 @@ public typealias TestLiteralType = Float80
 public typealias TestLiteralType = Double
 #endif
 
-@discardableResult
-internal func assertClose<T>(
+/// The error of `observed` in ulps of `expected`; infinity if their signs
+/// differ or exactly one of them is NaN.
+internal func ulpError<T>(
   _ expected: TestLiteralType,
-  _ observed: T,
-  allowedError: T = 16,
-  context: @autoclosure () -> String = "",
-  file: StaticString = #file,
-  line: UInt = #line
+  _ observed: T
 ) -> T where T: BinaryFloatingPoint {
   // Shortcut relative-error check if we got the sign wrong; it's OK to
   // underflow to zero, but we do not want to allow going right through
   // zero and getting the sign wrong.
-  guard observed.sign == expected.sign else {
-    print("Sign was wrong: expected \(expected) but saw \(observed).")
-    XCTFail(context(), file: file, line: line)
-    return .infinity
+  guard observed.sign == expected.sign else { return .infinity }
+  if observed.isNaN || expected.isNaN {
+    return observed.isNaN && expected.isNaN ? 0 : .infinity
   }
-  if observed.isNaN && expected.isNaN { return 0 }
   // If T(expected) is zero or infinite, and matches observed, the error
   // is zero.
   let expectedT = T(expected)
@@ -49,24 +44,43 @@ internal func assertClose<T>(
     T(signOf: x, magnitudeOf: T.greatestFiniteMagnitude.binade)
   }
   if observed.isInfinite {
-    return assertClose(
-      expected/2, topBinade(signOf: observed),
-      allowedError: allowedError, context: context(), file: file, line: line
-    )
+    return ulpError(expected/2, topBinade(signOf: observed))
   }
   if expectedT.isInfinite {
-    return assertClose(
-      TestLiteralType(topBinade(signOf: expectedT)), observed/2,
-      allowedError: allowedError, context: context(), file: file, line: line
-    )
+    return ulpError(TestLiteralType(topBinade(signOf: expectedT)), observed/2)
   }
-  // Compute error in ulp, compare to tolerance.
+  // Compute error in ulp.
   let absoluteError = (TestLiteralType(observed) - expected).magnitude
   let scale = max(expectedT.magnitude, T.leastNormalMagnitude).ulp
-  let ulps = T(absoluteError/TestLiteralType(scale))
-  if ulps > allowedError {
-    print("ULP error was unacceptably large: expected \(expected) but saw \(observed) (\(ulps)-ulp error).")
-    XCTFail(context(), file: file, line: line)
+  return T(absoluteError/TestLiteralType(scale))
+}
+
+@discardableResult
+internal func assertClose<T>(
+  _ expected: TestLiteralType,
+  _ observed: T,
+  allowedError: T = 16,
+  context: @autoclosure () -> String = "",
+  file: StaticString = #file,
+  line: UInt = #line
+) -> T where T: BinaryFloatingPoint {
+  let ulps = ulpError(expected, observed)
+  // Written so that a NaN error also fails.
+  guard ulps <= allowedError else {
+    let problem: String
+    if observed.sign != expected.sign {
+      problem = "Sign was wrong"
+    } else if observed.isNaN != expected.isNaN {
+      problem = "Only one of the values was NaN"
+    } else {
+      problem = "ULP error was unacceptably large (\(ulps)-ulp error)"
+    }
+    let details = context()
+    XCTFail("""
+      \(problem): expected \(expected) but saw \(observed).\
+      \(details.isEmpty ? "" : "\n" + details)
+      """, file: file, line: line)
+    return ulps
   }
   return ulps
 }

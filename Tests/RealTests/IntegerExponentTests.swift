@@ -17,6 +17,8 @@ internal extension Real where Self: FixedWidthFloatingPoint {
   
   static func testIntegerExponentCommon() {
     var g = TestRandomNumberGenerator(label: "testIntegerExponentCommon \(Self.self)")
+    let replay = g.replayInstructions(
+      filter: String(reflecting: IntegerExponentTests.self))
     // If x is -1, then the result is ±1 with sign chosen by parity of n.
     // Simply converting n to Real will flip parity when n is large, so
     // first check that we get those cases right.
@@ -39,26 +41,31 @@ internal extension Real where Self: FixedWidthFloatingPoint {
       let n = Int.random(in: nLowerBound ..< .max, using: &g)
       let even = n & -2
       let odd = even | 1
-      let context = """
-        x = \(x), n = \(n)
-        \(g.replayInstructions(filter: String(reflecting: IntegerExponentTests.self)))
-        """
-      assertClose( .infinity, Self.pow(x, even), context: context)
-      assertClose( .infinity, Self.pow(x, odd), context: context)
-      assertClose( 0.0, Self.pow(1/x, even), context: context)
-      assertClose( 0.0, Self.pow(1/x, odd), context: context)
-      assertClose( .infinity, Self.pow(-x, even), context: context)
-      assertClose(-.infinity, Self.pow(-x, odd), context: context)
-      assertClose( 0.0, Self.pow(-1/x, even), context: context)
-      assertClose(-0.0, Self.pow(-1/x, odd), context: context)
-      assertClose( 0.0, Self.pow(x, -even), context: context)
-      assertClose( 0.0, Self.pow(x, -odd), context: context)
-      assertClose( .infinity, Self.pow(1/x, -even), context: context)
-      assertClose( .infinity, Self.pow(1/x, -odd), context: context)
-      assertClose( 0.0, Self.pow(-x, -even), context: context)
-      assertClose(-0.0, Self.pow(-x, -odd), context: context)
-      assertClose( .infinity, Self.pow(-1/x, -even), context: context)
-      assertClose(-.infinity, Self.pow(-1/x, -odd), context: context)
+      // Every check reports the random inputs and how to replay them.
+      func check(
+        _ expected: TestLiteralType, _ observed: Self,
+        file: StaticString = #file, line: UInt = #line
+      ) {
+        assertClose(
+          expected, observed, context: "x = \(x), n = \(n)\n\(replay)",
+          file: file, line: line)
+      }
+      check( .infinity, Self.pow(x, even))
+      check( .infinity, Self.pow(x, odd))
+      check( 0.0, Self.pow(1/x, even))
+      check( 0.0, Self.pow(1/x, odd))
+      check( .infinity, Self.pow(-x, even))
+      check(-.infinity, Self.pow(-x, odd))
+      check( 0.0, Self.pow(-1/x, even))
+      check(-0.0, Self.pow(-1/x, odd))
+      check( 0.0, Self.pow(x, -even))
+      check( 0.0, Self.pow(x, -odd))
+      check( .infinity, Self.pow(1/x, -even))
+      check( .infinity, Self.pow(1/x, -odd))
+      check( 0.0, Self.pow(-x, -even))
+      check(-0.0, Self.pow(-x, -odd))
+      check( .infinity, Self.pow(-1/x, -even))
+      check(-.infinity, Self.pow(-1/x, -odd))
     }
   }
   
