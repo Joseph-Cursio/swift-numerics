@@ -80,14 +80,14 @@ final class IntegerUtilitiesShiftTests: XCTestCase {
       case .requireExact:
         preconditionFailure()
       }
-      let observed = value.shifted(rightBy: count, rounding: rule)
-      if observed != expected {
-        print("Error found in \(T.self).shifted(rightBy: \(count), rounding: \(rule)).")
-        print("   Value: \(String(value, radix: 2))")
-        print("Expected: \(String(expected, radix: 2))")
-        print("Observed: \(String(observed, radix: 2))")
-        XCTFail()
-      }
+    }
+    let observed = value.shifted(rightBy: count, rounding: rule)
+    if observed != expected {
+      print("Error found in \(T.self).shifted(rightBy: \(count), rounding: \(rule)).")
+      print("   Value: \(String(value, radix: 2))")
+      print("Expected: \(String(expected, radix: 2))")
+      print("Observed: \(String(observed, radix: 2))")
+      XCTFail()
     }
   }
     
