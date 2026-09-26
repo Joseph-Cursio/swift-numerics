@@ -351,14 +351,14 @@ final class ElementaryFunctionTests: XCTestCase {
   }
   
   func testAsinh<T: Real & FixedWidthFloatingPoint>(_ type: T.Type) {
-    // asinh(1) = π/2
-    XCTAssert(Complex<T>.asin(1).real.isApproximatelyEqual(to: .pi/2))
-    XCTAssertEqual(Complex<T>.asin(1).imaginary, 0)
+    // asinh(i) = iπ/2
+    XCTAssert(Complex<T>.asinh(.i).imaginary.isApproximatelyEqual(to: .pi/2))
+    XCTAssertEqual(Complex<T>.asinh(.i).real, 0)
     // asinh(0) = 0
-    XCTAssertEqual(0, Complex<T>.asin(0))
-    // asinh(-1) = -π/2
-    XCTAssert(Complex<T>.asin(-1).real.isApproximatelyEqual(to: -.pi/2))
-    XCTAssertEqual(Complex<T>.asin(-1).imaginary, 0)
+    XCTAssertEqual(0, Complex<T>.asinh(0))
+    // asinh(-i) = -iπ/2
+    XCTAssert(Complex<T>.asinh(-.i).imaginary.isApproximatelyEqual(to: -.pi/2))
+    XCTAssertEqual(Complex<T>.asinh(-.i).real, 0)
     // asinh is the identity at infinity.
     XCTAssertFalse(Complex<T>.asinh(Complex( .infinity, 0)).isFinite)
     XCTAssertFalse(Complex<T>.asinh(Complex( .infinity, .infinity)).isFinite)
