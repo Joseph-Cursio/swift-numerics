@@ -442,7 +442,7 @@ final class ElementaryFunctionTests: XCTestCase {
   func testDouble() {
     testExp(Double.self)
     testExpMinusOne(Double.self)
-    testLogOnePlus(Float.self)
+    testLogOnePlus(Double.self)
     testCosh(Double.self)
     testSinh(Double.self)
     testAcos(Double.self)
@@ -458,7 +458,7 @@ final class ElementaryFunctionTests: XCTestCase {
   func testFloat80() {
     testExp(Float80.self)
     testExpMinusOne(Float80.self)
-    testLogOnePlus(Float.self)
+    testLogOnePlus(Float80.self)
     testCosh(Float80.self)
     testSinh(Float80.self)
     testAcos(Float80.self)
