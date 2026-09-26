@@ -424,50 +424,34 @@ final class ElementaryFunctionTests: XCTestCase {
     XCTAssertEqual(Complex<T>.pow(.zero, +1), .zero)
   }
   
+  /// Runs every function's tests for one type, so the per-type tests below
+  /// can't drift apart or pass the wrong type.
+  func testAllFunctions<T: Real & FixedWidthFloatingPoint>(_ type: T.Type) {
+    testExp(type)
+    testExpMinusOne(type)
+    testLogOnePlus(type)
+    testCosh(type)
+    testSinh(type)
+    testAcos(type)
+    testAsin(type)
+    testAcosh(type)
+    testAsinh(type)
+    testAtanh(type)
+    testPowR(type)
+    testPowN(type)
+  }
+
   func testFloat() {
-    testExp(Float.self)
-    testExpMinusOne(Float.self)
-    testLogOnePlus(Float.self)
-    testCosh(Float.self)
-    testSinh(Float.self)
-    testAcos(Float.self)
-    testAsin(Float.self)
-    testAcosh(Float.self)
-    testAsinh(Float.self)
-    testAtanh(Float.self)
-    testPowR(Float.self)
-    testPowN(Float.self)
+    testAllFunctions(Float.self)
   }
-  
+
   func testDouble() {
-    testExp(Double.self)
-    testExpMinusOne(Double.self)
-    testLogOnePlus(Double.self)
-    testCosh(Double.self)
-    testSinh(Double.self)
-    testAcos(Double.self)
-    testAsin(Double.self)
-    testAcosh(Double.self)
-    testAsinh(Double.self)
-    testAtanh(Double.self)
-    testPowR(Double.self)
-    testPowN(Double.self)
+    testAllFunctions(Double.self)
   }
-  
+
 #if (arch(i386) || arch(x86_64)) && !os(Windows) && !os(Android)
   func testFloat80() {
-    testExp(Float80.self)
-    testExpMinusOne(Float80.self)
-    testLogOnePlus(Float80.self)
-    testCosh(Float80.self)
-    testSinh(Float80.self)
-    testAcos(Float80.self)
-    testAsin(Float80.self)
-    testAcosh(Float80.self)
-    testAsinh(Float80.self)
-    testAtanh(Float80.self)
-    testPowR(Float80.self)
-    testPowN(Float80.self)
+    testAllFunctions(Float80.self)
   }
 #endif
 }
