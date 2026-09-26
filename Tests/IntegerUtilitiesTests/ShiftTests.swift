@@ -17,7 +17,7 @@ import _TestSupport
 final class IntegerUtilitiesShiftTests: XCTestCase {
   
   func testRoundingShift<T, C>(
-    _ value: T, _ count: C, rounding rule: RoundingRule
+    _ value: T, _ count: C, rounding rule: RoundingRule, checks: CheckCounter
   ) where T: FixedWidthInteger, C: BinaryInteger {
     let floor = value >> count
     let lost = value &- floor << count
@@ -81,30 +81,38 @@ final class IntegerUtilitiesShiftTests: XCTestCase {
         preconditionFailure()
       }
     }
+    checks.record(exact ? "exact" : "inexact")
     let observed = value.shifted(rightBy: count, rounding: rule)
     if observed != expected {
-      print("Error found in \(T.self).shifted(rightBy: \(count), rounding: \(rule)).")
-      print("   Value: \(String(value, radix: 2))")
-      print("Expected: \(String(expected, radix: 2))")
-      print("Observed: \(String(observed, radix: 2))")
-      XCTFail()
+      XCTFail("""
+        \(T.self)(\(value)).shifted(rightBy: \(count), rounding: .\(rule)): \
+        expected \(expected), observed \(observed)
+        \(TestRandomNumberGenerator.replayInstructions(filter: "IntegerUtilitiesShiftTests"))
+        """)
     }
   }
     
     func testRoundingShift<T: FixedWidthInteger>(
       _ type: T.Type, rounding rule: RoundingRule
     ) {
+      var rng = TestRandomNumberGenerator(label: "testRoundingShift \(T.self) \(rule)")
+      let checks = CheckCounter()
       for count in -2*T.bitWidth ... 2*T.bitWidth {
         // zero shifted by anything is always zero
         XCTAssertEqual(0, (0 as T).shifted(rightBy: count, rounding: rule))
         for _ in 0 ..< 100 {
-          testRoundingShift(T.random(in: .min ... .max), count, rounding: rule)
+          testRoundingShift(
+            T.random(in: .min ... .max, using: &rng), count, rounding: rule,
+            checks: checks)
         }
       }
       
       for count in Int8.min ... .max {
-        testRoundingShift(T.random(in: .min ... .max), count, rounding: rule)
+        testRoundingShift(
+          T.random(in: .min ... .max, using: &rng), count, rounding: rule,
+          checks: checks)
       }
+      checks.require(["exact", "inexact"], "\(T.self) \(rule)")
     }
     
     func testRoundingShifts() {
