@@ -24,6 +24,7 @@ internal func assertClose<T>(
   _ expected: TestLiteralType,
   _ observed: T,
   allowedError: T = 16,
+  context: @autoclosure () -> String = "",
   file: StaticString = #file,
   line: UInt = #line
 ) -> T where T: BinaryFloatingPoint {
@@ -32,7 +33,7 @@ internal func assertClose<T>(
   // zero and getting the sign wrong.
   guard observed.sign == expected.sign else {
     print("Sign was wrong: expected \(expected) but saw \(observed).")
-    XCTFail(file: file, line: line)
+    XCTFail(context(), file: file, line: line)
     return .infinity
   }
   if observed.isNaN && expected.isNaN { return 0 }
@@ -50,13 +51,13 @@ internal func assertClose<T>(
   if observed.isInfinite {
     return assertClose(
       expected/2, topBinade(signOf: observed),
-      allowedError: allowedError, file: file, line: line
+      allowedError: allowedError, context: context(), file: file, line: line
     )
   }
   if expectedT.isInfinite {
     return assertClose(
       TestLiteralType(topBinade(signOf: expectedT)), observed/2,
-      allowedError: allowedError, file: file, line: line
+      allowedError: allowedError, context: context(), file: file, line: line
     )
   }
   // Compute error in ulp, compare to tolerance.
@@ -65,7 +66,7 @@ internal func assertClose<T>(
   let ulps = T(absoluteError/TestLiteralType(scale))
   if ulps > allowedError {
     print("ULP error was unacceptably large: expected \(expected) but saw \(observed) (\(ulps)-ulp error).")
-    XCTFail(file: file, line: line)
+    XCTFail(context(), file: file, line: line)
   }
   return ulps
 }

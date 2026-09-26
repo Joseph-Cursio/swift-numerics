@@ -16,8 +16,7 @@ import _TestSupport
 internal extension Real where Self: FixedWidthFloatingPoint {
   
   static func testIntegerExponentCommon() {
-    // TODO: replace with seedable generator, print seed.
-    var g = SystemRandomNumberGenerator()
+    var g = TestRandomNumberGenerator(label: "testIntegerExponentCommon \(Self.self)")
     // If x is -1, then the result is ±1 with sign chosen by parity of n.
     // Simply converting n to Real will flip parity when n is large, so
     // first check that we get those cases right.
@@ -40,22 +39,26 @@ internal extension Real where Self: FixedWidthFloatingPoint {
       let n = Int.random(in: nLowerBound ..< .max, using: &g)
       let even = n & -2
       let odd = even | 1
-      assertClose( .infinity, Self.pow(x, even))
-      assertClose( .infinity, Self.pow(x, odd))
-      assertClose( 0.0, Self.pow(1/x, even))
-      assertClose( 0.0, Self.pow(1/x, odd))
-      assertClose( .infinity, Self.pow(-x, even))
-      assertClose(-.infinity, Self.pow(-x, odd))
-      assertClose( 0.0, Self.pow(-1/x, even))
-      assertClose(-0.0, Self.pow(-1/x, odd))
-      assertClose( 0.0, Self.pow(x, -even))
-      assertClose( 0.0, Self.pow(x, -odd))
-      assertClose( .infinity, Self.pow(1/x, -even))
-      assertClose( .infinity, Self.pow(1/x, -odd))
-      assertClose( 0.0, Self.pow(-x, -even))
-      assertClose(-0.0, Self.pow(-x, -odd))
-      assertClose( .infinity, Self.pow(-1/x, -even))
-      assertClose(-.infinity, Self.pow(-1/x, -odd))
+      let context = """
+        x = \(x), n = \(n)
+        \(TestRandomNumberGenerator.replayInstructions(filter: "IntegerExponentTests"))
+        """
+      assertClose( .infinity, Self.pow(x, even), context: context)
+      assertClose( .infinity, Self.pow(x, odd), context: context)
+      assertClose( 0.0, Self.pow(1/x, even), context: context)
+      assertClose( 0.0, Self.pow(1/x, odd), context: context)
+      assertClose( .infinity, Self.pow(-x, even), context: context)
+      assertClose(-.infinity, Self.pow(-x, odd), context: context)
+      assertClose( 0.0, Self.pow(-1/x, even), context: context)
+      assertClose(-0.0, Self.pow(-1/x, odd), context: context)
+      assertClose( 0.0, Self.pow(x, -even), context: context)
+      assertClose( 0.0, Self.pow(x, -odd), context: context)
+      assertClose( .infinity, Self.pow(1/x, -even), context: context)
+      assertClose( .infinity, Self.pow(1/x, -odd), context: context)
+      assertClose( 0.0, Self.pow(-x, -even), context: context)
+      assertClose(-0.0, Self.pow(-x, -odd), context: context)
+      assertClose( .infinity, Self.pow(-1/x, -even), context: context)
+      assertClose(-.infinity, Self.pow(-1/x, -odd), context: context)
     }
   }
   
